@@ -1,46 +1,32 @@
 import 'dart:collection';
 import 'dart:developer';
 
-abstract class AbRole {
+class Player {
 
-}
-
-class Doctor extends AbRole{
-  int lastSaved = -1;
-
+  String name;
+  String role = "?";
+  bool alive = true;
+  bool marked = false;
   @override
   toString() {
-    return "Doctor";
+    return "$name is a $role";
+  }
+
+  Player(String name,String role) {
+    this.name = name;
+    this.role = role;
   }
 }
 
-class Witch extends AbRole{
+class Doctor extends Player{
+  int lastSaved = -1;
+  Doctor(String name, String role) : super(name, role);
+}
+
+class Witch extends Player{
   bool potion = true;
   bool poison = true;
 
-  @override
-  toString() {
-    return "Witch";
-  }
-}
+  Witch(String name, String role) : super(name, role);
 
-class Werewolf extends AbRole{
-  @override
-  toString() {
-    return "Werewolf";
-  }
-}
-
-class Villager extends AbRole{
-  @override
-  toString() {
-    return "Villager";
-  }
-}
-
-class Seer extends AbRole{
-  @override
-  toString() {
-    return "Seer";
-  }
 }

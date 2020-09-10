@@ -1,6 +1,8 @@
 import 'dart:collection';
 import 'dart:developer';
 import './roles.dart';
+import  './helpers.dart';
+import './game.dart';
 import 'package:flutter/material.dart';
 
 
@@ -21,6 +23,7 @@ class _appState extends State<app> {
         title: "OS Werewolf",
         home: Home(),
         routes: <String, WidgetBuilder>{
+          // '/' : (context) => Home(),
           '/NumRoles': (context) => SelectRoles(),
           '/GiveRoles': (context) => GiveRoles() 
         },
@@ -45,29 +48,10 @@ class Home extends StatelessWidget {
                   Navigator.pushNamed(context, '/NumRoles');
                 })
 
-        )
+        ),
+      drawer: mainDrawer(context),
     );
   }
-}
-
-
-class Player {
-
-  String name;
-  String role = "?";
-  bool alive = true;
-
-  @override
-  toString() {
-    return "$name is a $role";
-  }
-
-  Player(String name,String role) {
-    this.name = name;
-    this.role = role;
-
-  }
-
 }
 
 
@@ -90,20 +74,24 @@ class _GiveRolesState extends State<GiveRoles> {
     super.dispose();
   }
 
+  Player addPlayer() {
+    if (this.role == "Witch") {
+      return Witch(nameController.text, this.role);
+    } else if (this.role == "Doctor") {
+      return Doctor(nameController.text, this.role);
+    } else{
+      return Player(nameController.text, this.role);
+    }
+  }
 
-  // List, Player createPlayerRole(String name, List roles) {
-  //   print(roles);
-  //   setState(() {
-  //     this.role = roles.removeLast();
-  //     this.showing = true;
-  //
-  //   });
-  //   return Player(name, role);
-  //
-  //
-  //
-  //   // roles.
-  // }
+  Future<Object> moveOn(List roles, List<Player> players) {
+    if (roles.length > 0){
+      return Navigator.pushNamed(context, "/GiveRoles", arguments: GiveRoleArguments(roles, players));
+    } else{
+      return Navigator.pushNamed(context, "/Game", arguments: GiveRoleArguments(roles, players));
+    }
+  }
+
 
   Widget buildBody(List roles, List<Player> players) {
     if ( !this.showing) {
@@ -135,7 +123,7 @@ class _GiveRolesState extends State<GiveRoles> {
               ]
           )
       );
-    } else if (roles.length > 0) {
+    } else {
       //showing, fixed inputs, button goes to next page
       return Container(
           child: Column(
@@ -146,28 +134,9 @@ class _GiveRolesState extends State<GiveRoles> {
                 RaisedButton(
                   child: Text("Next"),
                   onPressed: () {
+                    moveOn(roles, players);
                   //  route
-                    Navigator.pushNamed(context, "/GiveRoles", arguments: GiveRoleArguments(roles, players));
-                  },
-                )
-              ]
-          )
-      );
-    }
-    else{
-      //all roles handed out, start game!
-      return Container(
-          child: Column(
-              children: [Text("${players.last.name}"),
-                Text("Your role is:"),
-                Text("${players.last.role}",
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),),
-                Text("Please hand back the phone to the game master."),
-                RaisedButton(
-                  child: Text("Next"),
-                  onPressed: () {
-                    //  route
-                    Navigator.pushNamed(context, "/Game", arguments: GiveRoleArguments(roles, players));
+                  //   Navigator.pushNamed(context, "/GiveRoles", arguments: GiveRoleArguments(roles, players));
                   },
                 )
               ]
@@ -185,7 +154,8 @@ class _GiveRolesState extends State<GiveRoles> {
     // print(args.roles);
     return Scaffold(
       appBar: AppBar(title: Text("Hand phone to next player"),),
-      body: buildBody(roles,players)
+      body: buildBody(roles,players),
+      drawer: mainDrawer(context),
 
     );
   }
@@ -210,7 +180,7 @@ class SelectRoles extends StatefulWidget {
 class _SelectRolesState extends State<SelectRoles> {
 
   int nPlayers = 0;
-  Map<String, int> roles = {"Werewolf":0, "Villager":0, "Seer":0, };
+  Map<String, int> roles = {"Werewolf":0, "Villager":0, "Seer":0, "Doctor" : 0, "Witch": 0};
 
   void updateRoles(String role, int amount) {
     roles[role] += amount;
@@ -220,18 +190,6 @@ class _SelectRolesState extends State<SelectRoles> {
       nPlayers = sum;
     });
     // print(roles);
-  }
-
-  List<String> convertToList(Map<String, int> roles) {
-    // void assignRole(Map roles) {
-    List<String> listRoles = new List<String>();
-    roles.forEach((key, value) {
-      for (int i = 0; i < value; i++) {
-        listRoles.add(key);
-      }
-    });
-    return listRoles..shuffle();
-  // roles.
   }
 
 
@@ -250,6 +208,30 @@ class _SelectRolesState extends State<SelectRoles> {
     );
   }
 
+  List<Widget> buildSelection() {
+    List<Widget> roleBars = [];
+    this.roles.forEach((key, value) {
+      roleBars.add(
+          Center(
+              child: roleBar(key, this.updateRoles)
+          )
+      );
+    });
+    roleBars.add(
+        Center(
+          child: RaisedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, "/GiveRoles", arguments: GiveRoleArguments(convertToList(roles), new List<Player>()) );
+              },
+              child: const Text("Next", style: TextStyle(fontSize: 20),)
+          ),
+        )
+
+    );
+    return roleBars;
+
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -257,26 +239,9 @@ class _SelectRolesState extends State<SelectRoles> {
             title: Text("Number of players: $nPlayers")
         ),
         body: Column(
-          children: <Widget>[
-            Center(
-                child: roleBar("Werewolf", this.updateRoles)
-            ),
-            Center(
-                child: roleBar("Villager", this.updateRoles)
-            ),
-            Center(
-                child: roleBar("Seer", this.updateRoles)
-            ),
-            Center(
-              child: RaisedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, "/GiveRoles", arguments: GiveRoleArguments(convertToList(roles), new List<Player>()) );
-                  },
-                  child: const Text("Next", style: TextStyle(fontSize: 20),)
-              ),
-            )
-          ],
-        )
+          children: buildSelection(),
+        ),
+      drawer: mainDrawer(context),
     );
   }
 }
