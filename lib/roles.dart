@@ -7,6 +7,8 @@ class Player {
   String role = "?";
   bool alive = true;
   bool marked = false;
+  String diedTime;
+  String diedMethod;
   @override
   toString() {
     return "$name is a $role";

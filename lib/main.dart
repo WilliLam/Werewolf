@@ -3,296 +3,443 @@ import 'dart:developer';
 import './roles.dart';
 import  './helpers.dart';
 import './game.dart';
+import './PreGameSetup.dart';
 import 'package:flutter/material.dart';
 
 
-
-void main() => runApp(app());
-
+void main() => runApp(App());
 
 
-class app extends StatefulWidget {
+
+class App extends StatefulWidget {
   @override
-  _appState createState() => _appState();
+  _AppState createState() => _AppState();
 }
 
-class _appState extends State<app> {
+class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
         title: "OS Werewolf",
         home: Home(),
         routes: <String, WidgetBuilder>{
-          // '/' : (context) => Home(),
           '/NumRoles': (context) => SelectRoles(),
-          '/GiveRoles': (context) => GiveRoles() 
+          '/GiveRoles': (context) => GiveRoles(),
+          '/CloseEyes' : (context) => CloseEyes(),
+          '/Werewolf' : (context) => RouteWerewolf(),
+          '/Seer' : (context) => RouteSeer(),
+          '/Vote' : (context) => Vote(),
+          '/AdminPanel' : (context) => AdminPanel()
+          // '/Doctor' : (context) => RouterDoctor(),
         },
     );
   }
 }
 
-
-
-class Home extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-            title: Text("Werewolf")
-        ),
-        body:
-        Container(
-            child: RaisedButton(
-                child: Text("Play"),
-                onPressed: (){
-                  Navigator.pushNamed(context, '/NumRoles');
-                })
-
-        ),
-      drawer: mainDrawer(context),
-    );
-  }
-}
-
-
-//hands out roles for each person privately.
-class GiveRoles extends StatefulWidget {
-  @override
-  _GiveRolesState createState() => _GiveRolesState();
-}
-
-class _GiveRolesState extends State<GiveRoles> {
-
-  String role = "?";
-  bool showing = false;
-  final nameController = TextEditingController();
-
-  @override
-  void dispose() {
-    // Clean up the controller when the widget is disposed.
-    nameController.dispose();
-    super.dispose();
-  }
-
-  Player addPlayer() {
-    if (this.role == "Witch") {
-      return Witch(nameController.text, this.role);
-    } else if (this.role == "Doctor") {
-      return Doctor(nameController.text, this.role);
-    } else{
-      return Player(nameController.text, this.role);
-    }
-  }
-
-  Future<Object> moveOn(List roles, List<Player> players) {
-    if (roles.length > 0){
-      return Navigator.pushNamed(context, "/GiveRoles", arguments: GiveRoleArguments(roles, players));
-    } else{
-      return Navigator.pushNamed(context, "/Game", arguments: GiveRoleArguments(roles, players));
-    }
-  }
-
-
-  Widget buildBody(List roles, List<Player> players) {
-    if ( !this.showing) {
-      return Container(
-          child: Column(
-              children: [TextField(
-                  decoration: InputDecoration(
-                      labelText: "Enter name",
-                      hintText: "Jane Smith"
-                  ),
-                  controller: nameController,
-              ),
-                Text("Your role is:"),
-                Text("$role",
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),),
-                RaisedButton(
-                  child: Text("Reveal role"),
-                  onPressed: () {
-                    setState(() {
-                      this.showing=true;
-                      this.role = roles.removeLast();
-                    });
-
-                    players.add(Player(nameController.text, this.role));
-                    print(players);
-                    print("wtf");
-                  },
-                )
-              ]
-          )
-      );
-    } else {
-      //showing, fixed inputs, button goes to next page
-      return Container(
-          child: Column(
-              children: [Text("${players.last.name}"),
-                Text("Your role is:"),
-                Text("${players.last.role}",
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),),
-                RaisedButton(
-                  child: Text("Next"),
-                  onPressed: () {
-                    moveOn(roles, players);
-                  //  route
-                  //   Navigator.pushNamed(context, "/GiveRoles", arguments: GiveRoleArguments(roles, players));
-                  },
-                )
-              ]
-          )
-      );
-    }
-  }
-
-
-  @override
-  Widget build(BuildContext context) {
-    final GiveRoleArguments args = ModalRoute.of(context).settings.arguments;
-    List roles = args.roles;
-    List players = args.players;
-    // print(args.roles);
-    return Scaffold(
-      appBar: AppBar(title: Text("Hand phone to next player"),),
-      body: buildBody(roles,players),
-      drawer: mainDrawer(context),
-
-    );
-  }
-}
-
-class GiveRoleArguments {
-
-  List<String> roles;
-  List<Player> players;
-  GiveRoleArguments(roles, players) {
-    this.roles = roles;
-    this.players = players;
-  }
-}
-
-//select number of players/roles.
-class SelectRoles extends StatefulWidget {
-  @override
-  _SelectRolesState createState() => _SelectRolesState();
-}
-
-class _SelectRolesState extends State<SelectRoles> {
-
-  int nPlayers = 0;
-  Map<String, int> roles = {"Werewolf":0, "Villager":0, "Seer":0, "Doctor" : 0, "Witch": 0};
-
-  void updateRoles(String role, int amount) {
-    roles[role] += amount;
-    int sum = 0;
-    roles.values.forEach((element) {sum += element;});
-    setState(() {
-      nPlayers = sum;
-    });
-    // print(roles);
-  }
-
-
-  void _pushGiveRoles() {
-    Navigator.of(context).push(
-        MaterialPageRoute<void>(
-            builder: (BuildContext context) {
-              return Scaffold(
-                appBar: AppBar(
-                    title: Text("Enter your name:")
-                ),
-                body: Text("hello"),
-              );
-            }
-        )
-    );
-  }
-
-  List<Widget> buildSelection() {
-    List<Widget> roleBars = [];
-    this.roles.forEach((key, value) {
-      roleBars.add(
-          Center(
-              child: roleBar(key, this.updateRoles)
-          )
-      );
-    });
-    roleBars.add(
-        Center(
-          child: RaisedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, "/GiveRoles", arguments: GiveRoleArguments(convertToList(roles), new List<Player>()) );
-              },
-              child: const Text("Next", style: TextStyle(fontSize: 20),)
+Widget adminPanel(GameState gameState, BuildContext context) {
+   void _showMyDialog(int index) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      barrierColor: Colors.black,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Player ${index+1}'), CloseButton()]),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Name:${gameState.players[index].name} \n'
+                    'Role: ${gameState.players[index].role}\n'
+                    'Or whatever${() {if (gameState.players[index].alive) {return "Alive";} else {
+                    return "Dead";}
+                }}'
+                    'Alive: ${gameState.players[index].alive}'),
+              ],
+            ),
           ),
-        )
+          actions: <Widget>[
+            FlatButton(
+              child: Text('Kill'),
+              onPressed: () {
+                gameState.players[index].alive = false;
+                Navigator.of(context).pop();
+              },
+            ),
+            FlatButton(
+              child: Text('Resurrect'),
+              onPressed: () {
+                gameState.players[index].alive = true;
+                Navigator.of(context).pop();
+              },
+            ),
 
+          ],
+          // backgroundColor: Colors.black,
+        );
+      },
     );
-    return roleBars;
-
   }
+  return GridView.count(crossAxisCount: 3,
+    children:
+    List.generate(gameState.players.length, (int index) {
+      print(index);
+      return Center(
+          child: FlatButton(
+            child: Column(
+                children: [
+                  Text(gameState.players[index].name),
+                  Text(gameState.players[index].role)
+                ]),
+            onPressed: () =>  _showMyDialog(index),
 
+          )
+      );
+    })
+    ,);
+}
+
+class AdminPanel extends StatefulWidget {
+  @override
+  _AdminPanelState createState() => _AdminPanelState();
+}
+
+class _AdminPanelState extends State<AdminPanel> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-            title: Text("Number of players: $nPlayers")
-        ),
-        body: Column(
-          children: buildSelection(),
-        ),
-      drawer: mainDrawer(context),
-    );
+    GameState gameState = ModalRoute.of(context).settings.arguments;
+    return
+        adminPanel(gameState, context);
   }
 }
 
 
 
-class roleBar extends StatefulWidget{
-  int number = 0;
-  String name;
-  Function updateRoles;
-  roleBar(String name, Function updateRoles) {
-    this.name = name;
-    this.updateRoles = updateRoles;
-  }
+
+class _GameTemplate extends State<StatefulWidget> {
+  int _selectedInd = 0;
+  // void onTap(int ind) {
+  //   setState(() {
+  //     _selectedInd = ind;
+  //   });
+  // }
+  // void bottomOnTap(index) {
+  //   switch(index){
+  //     case 1:
+  //       Navigator.pushNamed(context, '/AdminPanel', arguments: gameState);
+  //   }
+  // }
+
+
   @override
-  _roleBarState createState() => _roleBarState() ;
+  Widget build(BuildContext context) {
+    // GameState gameState = ModalRoute.of(context).settings.arguments;
+    return Container();
+  }
+}
+
+
+class Vote extends StatefulWidget {
+  @override
+  _VoteState createState() => _VoteState();
+}
+
+class _VoteState extends _GameTemplate {
   // @override
-  // _roleBar createState() = > _roleBarState();
-}
+  // Widget build(BuildContext context) {
+  //   return Container();
 
-class _roleBarState extends State<roleBar> {
-  int number = 0;
-  String name;
+
+  List<Widget> _widgetOptions(GameState gameState) {
+    return
+      <Widget>[
+        Container(
+          child: Row(
+            children: [
+              Text("Vote for someone to lynch."),
+              RaisedButton(
+                  child: Text("Kill"),
+                  onPressed: () {
+                    gameState.curTurn = gameState.getNextTurn();
+                    Navigator.pushNamed(context, '/${gameState.turnOrder.elementAt(gameState.curTurn)}', arguments: gameState);
+                  }),
+              RaisedButton(
+                  child: Text("Skip"),
+                  onPressed: () {
+                    gameState.curTurn = gameState.getNextTurn();
+                    Navigator.pushNamed(context, '/${gameState.turnOrder.elementAt(gameState.curTurn)}', arguments: gameState);
+                  })
+
+            ],
+          ),
+        ),
+
+      ];
+  }
+
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-        child:Row(
-            children: <Widget>[
-              IconButton(icon: Icon(Icons.remove_circle), onPressed: () {
-                if (number >0 ) {
-                  setState(() {
-                    number--;
-                  });
-                  widget.updateRoles(widget.name, -1);
+    GameState gameState = ModalRoute.of(context).settings.arguments;
+    gameState.time = "Day";
 
-                }
-              }),
-              Column(
-                children: <Widget>[
-                Text(number.toString()),
-                Text(widget.name),
-                ]
-              ),
-              IconButton(icon: Icon(Icons.add_circle), onPressed: () {setState(() {
-                number++;
-                widget.updateRoles(widget.name, 1);
-              });})
-            ]
+    // GameState gameState = GameState(players);
+    return Scaffold(
+        appBar: gameAppBar(gameState),
+        body: _widgetOptions(gameState).elementAt(0),
+        drawer: mainDrawer(context),
+        bottomNavigationBar:
+        BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.videogame_asset),
+              title: Text('Game'),
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people),
+              title: Text('Players'),
+            ),
+
+          ],
+          currentIndex: _selectedInd,
+          selectedItemColor: Colors.amber[800],
+          onTap: (index){
+            switch(index){
+              case 1:
+                Navigator.pushNamed(context, '/AdminPanel', arguments: gameState);
+            }
+          }
         )
+
+    );
+  }
+
+
+}
+
+
+
+class RouteSeer extends StatefulWidget {
+  @override
+  _RouteSeerState createState() => _RouteSeerState();
+}
+
+class _RouteSeerState extends _GameTemplate {
+  int _selectedInd = 0;
+  void onTap(int ind) {
+    print(ind);
+    print(_selectedInd);
+    setState(() {
+      _selectedInd = ind;
+    });
+  }
+
+  List<Widget> _widgetOptions(GameState gameState) {
+    return
+      <Widget>[
+        Container(
+          child: Row(
+            children: [
+              Text("Choose someone to investigate"),
+              RaisedButton(
+                  child: Text("Kill"),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/${gameState.getNextTurn()}',
+                        arguments: gameState);
+                  }),
+              RaisedButton(
+                  child: Text("Skip"),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/${gameState.getNextTurn()}',
+                        arguments: gameState);
+                  })
+
+            ],
+          ),
+        ),
+
+        adminPanel(gameState, context),
+
+      ];
+  }
+  @override
+  Widget build(BuildContext context) {
+    GameState gameState = ModalRoute.of(context).settings.arguments;
+
+
+    // GameState gameState = GameState(players);
+    return Scaffold(
+        appBar: gameAppBar(gameState),
+        body: _widgetOptions(gameState).elementAt(_selectedInd),
+        endDrawer: mainDrawer(context),
+        bottomNavigationBar:
+        BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.videogame_asset),
+              title: Text('Game'),
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people),
+              title: Text('Players'),
+            ),
+
+          ],
+          currentIndex: _selectedInd,
+          selectedItemColor: Colors.amber[800],
+          onTap: onTap,
+        )
+
     );
   }
 }
 
+
+
+class CloseEyes extends StatefulWidget {
+  @override
+  _CloseEyesState createState() => _CloseEyesState();
+}
+
+class _CloseEyesState extends State<CloseEyes> {
+
+  @override
+  Widget build(BuildContext context) {
+    GameState gameState = ModalRoute.of(context).settings.arguments;
+    gameState.day += 1;
+    gameState.time = "Night";
+    // GameState gameState = GameState(players);
+    return Scaffold(
+
+      appBar: gameAppBar(gameState),
+      body: Container(
+        child: Row(
+          children: [
+            Text("Please close eyes"),
+            RaisedButton(
+                child: Text("Next"),
+                onPressed: (){
+                  gameState.curTurn = gameState.getNextTurn();
+                  Navigator.pushNamed(context, '/${gameState.turnOrder.elementAt(gameState.curTurn)}', arguments: gameState);
+                })
+          ],
+        ),
+      ),
+      drawer: mainDrawer(context),
+
+    );
+  }
+}
+
+
+BottomNavigationBar gameBar(int index, onTap) {
+
+  return BottomNavigationBar(
+    items: const <BottomNavigationBarItem>[
+      BottomNavigationBarItem(
+        icon: Icon(Icons.videogame_asset),
+        title: Text('Game'),
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.people),
+        title: Text('Players'),
+      ),
+
+    ],
+    currentIndex: index,
+    selectedItemColor: Colors.amber[800],
+    onTap: onTap,
+  );
+}
+
+// class _GameRoute extends State<StatefulWidget> {
+//   @override
+//   Widget build(BuildContext context) {
+//
+//
+//   }
+// }
+
+
+
+
+
+
+class RouteWerewolf extends StatefulWidget {
+  @override
+  _RouteWerewolf createState() => _RouteWerewolf();
+}
+
+
+class _RouteWerewolf extends State<RouteWerewolf> {
+  int _selectedInd = 0;
+  void onTap(int ind) {
+    print(ind);
+    print(_selectedInd);
+    setState(() {
+      _selectedInd = ind;
+    });
+  }
+
+  List<Widget> _widgetOptions(GameState gameState) {
+    return
+      <Widget>[
+        Container(
+          child: Row(
+            children: [
+              Text("Choose someone to kill"),
+              RaisedButton(
+                  child: Text("Kill"),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/${gameState.getNextTurn()}',
+                        arguments: gameState);
+                  }),
+              RaisedButton(
+                  child: Text("Skip"),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/${gameState.turnOrder.elementAt(gameState.getNextTurn())}',
+                        arguments: gameState);
+                  })
+
+            ],
+          ),
+        ),
+
+        adminPanel(gameState, context),
+
+      ];
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    GameState gameState = ModalRoute.of(context).settings.arguments;
+
+
+      // GameState gameState = GameState(players);
+      return Scaffold(
+        appBar: gameAppBar(gameState),
+        body: _widgetOptions(gameState).elementAt(_selectedInd),
+        drawer: mainDrawer(context),
+        bottomNavigationBar:
+          BottomNavigationBar(
+            items: const <BottomNavigationBarItem>[
+              BottomNavigationBarItem(
+                icon: Icon(Icons.videogame_asset),
+                title: Text('Game'),
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.people),
+                title: Text('Players'),
+              ),
+
+            ],
+            currentIndex: _selectedInd,
+            selectedItemColor: Colors.amber[800],
+            onTap: onTap,
+          )
+
+      );
+  }
+}
