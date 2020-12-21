@@ -62,7 +62,7 @@ class _GiveRolesState extends State<GiveRoles> {
       GameState gameState = GameState(players);
       //{"Werewolf":0, "Villager":0, "Seer":0, "Doctor" : 0, "Witch": 0}
 
-      return Navigator.pushNamed(context, "/CloseEyes", arguments: gameState);
+      return Navigator.pushNamed(context, "/Game", arguments: gameState);
     }
   }
 

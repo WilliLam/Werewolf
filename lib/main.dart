@@ -29,12 +29,339 @@ class _AppState extends State<App> {
           '/Werewolf' : (context) => RouteWerewolf(),
           '/Seer' : (context) => RouteSeer(),
           '/Vote' : (context) => Vote(),
-          '/AdminPanel' : (context) => AdminPanel()
+          '/AdminPanel' : (context) => AdminPanel(),
+          '/Game' : (context) => Game(),
           // '/Doctor' : (context) => RouterDoctor(),
         },
     );
   }
 }
+
+class Game extends StatefulWidget {
+  @override
+  _GameState createState() => _GameState();
+}
+
+class _GameState extends State<Game> {
+
+  int _selectedInd = 0;
+
+  void onTap(int ind) {
+    print(ind);
+    print(_selectedInd);
+    setState(() {
+      _selectedInd = ind;
+    });
+  }
+
+  Widget rCloseEyes() {
+    GameState gameState = ModalRoute
+        .of(context)
+        .settings
+        .arguments;
+
+    setState(() {
+      gameState.time = "Night";
+      gameState.day += 1;
+    });
+
+    Widget body = Container(
+      child: Row(
+        children: [
+          Text("Close eyes"),
+          RaisedButton(
+              child: Text("Next"),
+              onPressed: () {
+                setState(() {
+                  gameState.curTurn = gameState.getNextTurn();
+                });
+              })
+
+        ],
+      ),
+    );
+
+    // GameState gameState = GameState(players);
+    return Scaffold(
+        appBar: gameAppBar(gameState),
+        body: body,
+        drawer: mainDrawer(context),
+        bottomNavigationBar:
+        BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.videogame_asset),
+              title: Text('Game'),
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people),
+              title: Text('Players'),
+            ),
+
+          ],
+          currentIndex: _selectedInd,
+          selectedItemColor: Colors.amber[800],
+          onTap: onTap,
+        )
+
+    );
+  }
+
+
+  Widget RWerewolf() {
+    GameState gameState = ModalRoute
+        .of(context)
+        .settings
+        .arguments;
+
+    void kill(int index) {
+      if (!gameState.players.elementAt(index).alive) {
+        return null;
+      } else {
+        setState(() {
+          gameState.players
+              .elementAt(index)
+              .alive = false;
+          Navigator.of(context).pop();
+          // gameState.curTurn = gameState.getNextTurn();
+        });
+
+      }
+    }
+
+    void _selectKill() async {
+      return showDialog<void>(
+          context: context,
+          barrierDismissible: true, // user must tap button!
+          barrierColor: Colors.black,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [Text('Player'), CloseButton()]),
+              content:
+                  // GridView.count(crossAxisCount: 1,
+                  //   children:
+                    ListView(children:
+                      List.generate(gameState.players.length, (int index) {
+                        print(index);
+                        return Center(
+                            child: FlatButton(
+                              child: Row(
+                                  children: [
+                                    Text(gameState.players[index].name),
+                                    Text(gameState.players[index].role)
+                                  ]),
+                              onPressed: () => kill(index),
+                            )
+                        );
+                      }),
+                    )
+              );
+          },
+      );
+    }
+
+    void _showMyDialog(int index) async {
+      return showDialog<void>(
+        context: context,
+        barrierDismissible: true, // user must tap button!
+        barrierColor: Colors.black,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [Text('Player ${index+1}'), CloseButton()]),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: <Widget>[
+                  Text('Name:${gameState.players[index].name} \n'
+                      'Role: ${gameState.players[index].role}\n'
+                      'Or whatever${() {if (gameState.players[index].alive) {return "Alive";} else {
+                    return "Dead";}
+                  }}'
+                      'Alive: ${gameState.players[index].alive}'),
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              FlatButton(
+                child: Text('Kill'),
+                onPressed: () {
+                  gameState.players[index].alive = false;
+                  Navigator.of(context).pop();
+                },
+              ),
+              FlatButton(
+                child: Text('Resurrect'),
+                onPressed: () {
+                  gameState.players[index].alive = true;
+                  Navigator.of(context).pop();
+                },
+              ),
+
+            ],
+            // backgroundColor: Colors.black,
+          );
+        },
+      );
+    }
+
+
+    Widget body = Container(
+      child: Row(
+        children: [
+          Text("Choose someone to kill"),
+          RaisedButton(
+              child: Text("Kill"),
+              onPressed: () {
+                _selectKill();
+                gameState.curTurn = gameState.getNextTurn();
+              }),
+          RaisedButton(
+              child: Text("Skip"),
+              onPressed: () {
+                setState(() {
+                  gameState.curTurn = gameState.getNextTurn();
+                });
+
+              })
+
+        ],
+      ),
+    );
+
+    // GameState gameState = GameState(players);
+    return Scaffold(
+        appBar: gameAppBar(gameState),
+        body: body,
+        drawer: mainDrawer(context),
+        bottomNavigationBar:
+        BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.videogame_asset),
+              title: Text('Game'),
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people),
+              title: Text('Players'),
+            ),
+
+          ],
+          currentIndex: _selectedInd,
+          selectedItemColor: Colors.amber[800],
+          onTap: onTap,
+        )
+
+    );
+  }
+
+  Widget rVote() {
+    GameState gameState = ModalRoute
+        .of(context)
+        .settings
+        .arguments;
+    setState(() {
+      gameState.time = "Day";
+    });
+
+    Widget body =
+    Container(
+      child: Row(
+        children: [
+          Text("Vote for someone to lynch."),
+          RaisedButton(
+              child: Text("Kill"),
+              onPressed: () {
+                gameState.curTurn = gameState.getNextTurn();
+                Navigator.pushNamed(context,
+                    '/${gameState.turnOrder.elementAt(gameState.curTurn)}',
+                    arguments: gameState);
+              }),
+          RaisedButton(
+              child: Text("Skip"),
+              onPressed: () {
+                setState(() {
+
+                  gameState.curTurn = gameState.getNextTurn();
+                });
+
+              })
+
+        ],
+      ),
+    );
+
+
+
+
+
+    // GameState gameState = GameState(players);
+    return Scaffold(
+        appBar: gameAppBar(gameState),
+        body: body,
+        drawer: mainDrawer(context),
+        bottomNavigationBar:
+        BottomNavigationBar(
+            items: const <BottomNavigationBarItem>[
+              BottomNavigationBarItem(
+                icon: Icon(Icons.videogame_asset),
+                title: Text('Game'),
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.people),
+                title: Text('Players'),
+              ),
+
+            ],
+            currentIndex: _selectedInd,
+            selectedItemColor: Colors.amber[800],
+            onTap: (index) {
+              switch (index) {
+                case 1:
+                  Navigator.pushNamed(
+                      context, '/AdminPanel', arguments: gameState);
+              }
+            }
+        )
+
+    );
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    GameState gameState = ModalRoute
+        .of(context)
+        .settings
+        .arguments;
+    switch (gameState.turnOrder.elementAt(gameState.curTurn)) {
+      case "CloseEyes":
+        {
+          return rCloseEyes();
+        }
+      case "Werewolf":
+        {
+          return RWerewolf();
+        }
+      case "Vote":
+        return rVote();
+    // case "Seer" {
+    //   return RSeer();
+    // }
+    // case "Doctor" {
+    //   return RDoctor();
+    // }
+      default:
+        {
+          print("Oh dear");
+        }
+    }
+  }
+}
+
+
 
 Widget adminPanel(GameState gameState, BuildContext context) {
    void _showMyDialog(int index) async {
@@ -149,71 +476,6 @@ class _VoteState extends _GameTemplate {
   // @override
   // Widget build(BuildContext context) {
   //   return Container();
-
-
-  List<Widget> _widgetOptions(GameState gameState) {
-    return
-      <Widget>[
-        Container(
-          child: Row(
-            children: [
-              Text("Vote for someone to lynch."),
-              RaisedButton(
-                  child: Text("Kill"),
-                  onPressed: () {
-                    gameState.curTurn = gameState.getNextTurn();
-                    Navigator.pushNamed(context, '/${gameState.turnOrder.elementAt(gameState.curTurn)}', arguments: gameState);
-                  }),
-              RaisedButton(
-                  child: Text("Skip"),
-                  onPressed: () {
-                    gameState.curTurn = gameState.getNextTurn();
-                    Navigator.pushNamed(context, '/${gameState.turnOrder.elementAt(gameState.curTurn)}', arguments: gameState);
-                  })
-
-            ],
-          ),
-        ),
-
-      ];
-  }
-
-
-  @override
-  Widget build(BuildContext context) {
-    GameState gameState = ModalRoute.of(context).settings.arguments;
-    gameState.time = "Day";
-
-    // GameState gameState = GameState(players);
-    return Scaffold(
-        appBar: gameAppBar(gameState),
-        body: _widgetOptions(gameState).elementAt(0),
-        drawer: mainDrawer(context),
-        bottomNavigationBar:
-        BottomNavigationBar(
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.videogame_asset),
-              title: Text('Game'),
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.people),
-              title: Text('Players'),
-            ),
-
-          ],
-          currentIndex: _selectedInd,
-          selectedItemColor: Colors.amber[800],
-          onTap: (index){
-            switch(index){
-              case 1:
-                Navigator.pushNamed(context, '/AdminPanel', arguments: gameState);
-            }
-          }
-        )
-
-    );
-  }
 
 
 }
